@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>星铁配队助手</title>
+<style>
+  :root{
+    --bg:#0c0c11; --panel:#15151c; --panel-2:#1d1d26; --text:#ececf1; --muted:#9a9aa8;
+    --border:rgba(255,255,255,.10); --gold:#e2c07a; --gold-dim:#8a7648; --cyan:#7ec8d8;
+    --danger:#ef6b60; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1a1a24 0%,var(--bg) 60%);
+    color:var(--text);font:400 14px/1.6 "SF Pro Text","PingFang SC",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  .shell{max-width:1060px;margin:0 auto;padding:28px 20px 60px}
+  header{text-align:center;margin-bottom:22px}
+  header h1{margin:0;font-size:24px;font-weight:600;letter-spacing:.5px}
+  header h1 .star{color:var(--gold)}
+  header p{margin:8px 0 0;color:var(--muted);font-size:13px}
+  .status{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:999px;background:var(--muted)}
+  .dot.ok{background:#4ade80}
+  .dot.bad{background:var(--danger)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+  .ask{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+  textarea{
+    width:100%;min-height:88px;resize:vertical;padding:12px 14px;border-radius:10px;
+    border:1px solid var(--border);background:var(--panel-2);color:var(--text);font:inherit;outline:none;
+  }
+  textarea:focus{border-color:var(--gold-dim)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1}
+  button.main{
+    border:none;border-radius:10px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer;
+    background:linear-gradient(180deg,#e9cd8e,#cfa95f);color:#2a2210;
+  }
+  button.main:disabled{opacity:.5;cursor:not-allowed}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    background:var(--panel-2);border:1px solid var(--border);border-radius:999px;
+    padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer;
+  }
+  .chip:hover{border-color:var(--gold-dim);color:var(--text)}
+  .grid{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:16px;align-items:start;margin-top:16px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  h2.sec{font-size:14px;margin:0 0 12px;color:var(--gold);font-weight:600;letter-spacing:.4px}
+  #log{display:flex;flex-direction:column;gap:8px;max-height:72vh;overflow:auto}
+  .step{font-size:12px;color:var(--muted);border-left:2px solid var(--border);padding:2px 0 2px 10px}
+  .step.call{border-left-color:var(--cyan);color:var(--text)}
+  .step.res{border-left-color:var(--gold-dim)}
+  .step.err{border-left-color:var(--danger);color:var(--danger)}
+  .step code{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--muted)}
+  .step details{margin-top:4px}
+  .step summary{cursor:pointer;color:var(--muted)}
+  .step pre{
+    margin:6px 0 0;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    font:400 11px/1.5 "JetBrains Mono",Consolas,monospace;white-space:pre-wrap;max-height:200px;overflow:auto;
+  }
+  #out{min-height:220px}
+  #out h1{font-size:19px;border-bottom:1px solid var(--border);padding-bottom:8px;margin:0 0 14px}
+  #out h2{font-size:16px;color:var(--gold);margin:20px 0 8px}
+  #out h3{font-size:14px;margin:16px 0 6px}
+  #out table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  #out th,#out td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+  #out th{background:var(--panel-2);color:var(--gold)}
+  #out blockquote{margin:10px 0;padding:8px 14px;border-left:3px solid var(--gold-dim);background:var(--panel-2);color:var(--muted);border-radius:0 8px 8px 0;font-size:13px}
+  #out a{color:var(--cyan);word-break:break-all}
+  #out code{background:var(--panel-2);padding:1px 5px;border-radius:5px;font-family:"JetBrains Mono",Consolas,monospace;font-size:12px}
+  #out ul,#out ol{padding-left:22px}
+  .placeholder{color:var(--muted);font-size:13px;text-align:center;padding:44px 10px}
+  .toolbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px}
+  .btn-mini{background:var(--panel-2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:400;cursor:pointer}
+  .btn-mini:hover{color:var(--text);border-color:var(--gold-dim)}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--gold-dim);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <h1><span class="star">✦</span> 星铁配队助手</h1>
+    <p>《崩坏：星穹铁道》阵容搭配智能推荐 · 描述你的角色池与目标</p>
+    <div class="status"><span class="dot ok" id="dot"></span><span id="statusText">本地服务运行中</span></div>
+  </header>
+
+  <div class="card">
+    <div class="ask">
+      <textarea id="input" placeholder="描述你的角色池和目标，例如：我有黄泉、银狼、阮·梅，想打深渊，怎么配队？"></textarea>
+      <div class="row">
+        <div class="chips" id="chips"></div>
+        <span class="grow"></span>
+        <button class="main" id="run">生成配队方案</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2 class="sec">分析过程</h2>
+      <div id="log"><div class="placeholder">检索与思考过程会显示在这里</div></div>
+    </div>
+    <div class="card">
+      <div class="toolbar">
+        <button class="btn-mini" id="copy" style="display:none">复制</button>
+        <button class="btn-mini" id="download" style="display:none">导出 .md</button>
+      </div>
+      <h2 class="sec">配队方案</h2>
+      <div id="out"><div class="placeholder" id="ph">配队方案会显示在这里</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var inputEl = document.getElementById("input");
+  var runBtn = document.getElementById("run");
+  var logEl = document.getElementById("log");
+  var outEl = document.getElementById("out");
+  var copyBtn = document.getElementById("copy");
+  var downBtn = document.getElementById("download");
+  var chipsEl = document.getElementById("chips");
+  var dot = document.getElementById("dot");
+  var statusText = document.getElementById("statusText");
+  var running = false;
+  var outputMd = "";
+
+  var EXAMPLES = [
+    "我有黄泉、银狼、阮·梅，想打深渊",
+    "记忆命途怎么配队？",
+    "新手开局怎么配队？",
+    "4.6 版本深渊阵容推荐"
+  ];
+  EXAMPLES.forEach(function(t){
+    var c = document.createElement("span");
+    c.className = "chip";
+    c.textContent = t;
+    c.addEventListener("click", function(){ inputEl.value = t; inputEl.focus(); });
+    chipsEl.appendChild(c);
+  });
+
+  function setStatus(ok, text){
+    dot.className = "dot " + (ok === true ? "ok" : ok === false ? "bad" : "");
+    statusText.textContent = text;
+  }
+  function esc(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function addStep(cls, html){
+    if(logEl.querySelector(".placeholder")) logEl.innerHTML = "";
+    var d = document.createElement("div");
+    d.className = "step " + cls;
+    d.innerHTML = html;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function renderMd(md){
+    if(window.marked && typeof window.marked.parse === "function"){
+      outEl.innerHTML = window.marked.parse(md);
+    } else {
+      outEl.innerHTML = "<pre style='white-space:pre-wrap'>" + esc(md) + "</pre>";
+    }
+  }
+  function setRunning(v){
+    running = v;
+    runBtn.disabled = v;
+    runBtn.innerHTML = v ? '<span class="spin"></span>生成中…' : "生成配队方案";
+  }
+
+  function parseSSE(chunk){
+    var ev = "message", dataLines = [];
+    chunk.split("\n").forEach(function(line){
+      if(line.indexOf("event:") === 0) ev = line.slice(6).trim();
+      else if(line.indexOf("data:") === 0) dataLines.push(line.slice(5).trim());
+    });
+    if(!dataLines.length) return;
+    var data;
+    try { data = JSON.parse(dataLines.join("\n")); } catch(e){ return; }
+
+    if(ev === "status"){
+      addStep("", esc(data.text || ""));
+    } else if(ev === "tool_call"){
+      addStep("call", "🔍 检索：<code>" + esc(JSON.stringify(data.args || {})) + "</code>");
+    } else if(ev === "tool_result"){
+      addStep("res", "📄 " + esc(data.name || "工具") + " 返回" +
+        "<details><summary>查看内容</summary><pre>" + esc(String(data.content || "").slice(0,2000)) + "</pre></details>");
+    } else if(ev === "assistant"){
+      outputMd = data.content || "";
+      renderMd(outputMd);
+      copyBtn.style.display = downBtn.style.display = "";
+    } else if(ev === "error"){
+      addStep("err", "⚠ " + esc(data.text || "出错"));
+    }
+  }
+
+  function run(){
+    if(running) return;
+    var text = inputEl.value.trim();
+    if(!text){ inputEl.focus(); return; }
+    outputMd = "";
+    outEl.innerHTML = "";
+    logEl.innerHTML = "";
+    copyBtn.style.display = downBtn.style.display = "none";
+    setRunning(true);
+
+    fetch("/api/run", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ text: text })
+    }).then(function(res){
+      if(!res.ok) return res.text().then(function(t){ throw new Error("HTTP " + res.status + " " + t); });
+      var reader = res.body.getReader();
+      var dec = new TextDecoder();
+      var buf = "";
+      function pump(){
+        return reader.read().then(function(r){
+          if(r.done){ if(buf.trim()) parseSSE(buf); return; }
+          buf += dec.decode(r.value, {stream:true});
+          var i;
+          while((i = buf.indexOf("\n\n")) >= 0){
+            var chunk = buf.slice(0, i);
+            buf = buf.slice(i + 2);
+            parseSSE(chunk);
+          }
+          return pump();
+        });
+      }
+      return pump();
+    }).then(function(){
+      addStep("", outputMd ? "✓ 完成" : "未产出方案，请重试或补充角色池信息");
+      setStatus(true, "本地服务运行中");
+    }).catch(function(err){
+      addStep("err", "出错：" + esc(err.message || err));
+      setStatus(false, "请求出错");
+    }).then(function(){
+      setRunning(false);
+    });
+  }
+
+  runBtn.addEventListener("click", run);
+  inputEl.addEventListener("keydown", function(e){
+    if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); run(); }
+  });
+  copyBtn.addEventListener("click", function(){
+    if(navigator.clipboard) navigator.clipboard.writeText(outputMd);
+    copyBtn.textContent = "已复制";
+    setTimeout(function(){ copyBtn.textContent = "复制"; }, 1200);
+  });
+  downBtn.addEventListener("click", function(){
+    var blob = new Blob([outputMd], {type:"text/markdown;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "星铁配队方案.md";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+})();
+</script>
+</body>
+</html>

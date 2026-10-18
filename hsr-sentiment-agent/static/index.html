@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>星铁社区舆情分析</title>
+<style>
+  :root{
+    --bg:#0d0d12; --panel:#16161d; --panel-2:#1e1e27; --text:#ececf1; --muted:#9a9aa8;
+    --border:rgba(255,255,255,.10); --gold:#e2c07a; --gold-dim:#8a7648; --cyan:#7ec8d8;
+    --danger:#ef6b60; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1a1a24 0%,var(--bg) 60%);
+    color:var(--text);font:400 14px/1.6 "SF Pro Text","PingFang SC",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  .shell{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
+  header{text-align:center;margin-bottom:24px}
+  header h1{margin:0;font-size:24px;font-weight:600;letter-spacing:.5px}
+  header h1 .star{color:var(--gold)}
+  header p{margin:8px 0 0;color:var(--muted);font-size:13px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+  .ask{display:flex;gap:10px;margin-bottom:14px}
+  input[type=text]{
+    flex:1;padding:12px 14px;border-radius:10px;border:1px solid var(--border);
+    background:var(--panel-2);color:var(--text);font:inherit;outline:none;
+  }
+  input[type=text]:focus{border-color:var(--gold-dim)}
+  button{
+    border:none;border-radius:10px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer;
+    background:linear-gradient(180deg,#e9cd8e,#cfa95f);color:#2a2210;
+  }
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .chip{
+    background:var(--panel-2);border:1px solid var(--border);border-radius:999px;
+    padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer;
+  }
+  .chip:hover{border-color:var(--gold-dim);color:var(--text)}
+  .grid{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:16px;align-items:start}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  h2.sec{font-size:14px;margin:0 0 12px;color:var(--gold);font-weight:600;letter-spacing:.4px}
+  #log{display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow:auto}
+  .step{font-size:12px;color:var(--muted);border-left:2px solid var(--border);padding:2px 0 2px 10px}
+  .step.call{border-left-color:var(--cyan);color:var(--text)}
+  .step.res{border-left-color:var(--gold-dim)}
+  .step.err{border-left-color:var(--danger);color:var(--danger)}
+  .step code{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--muted)}
+  .step details{margin-top:4px}
+  .step summary{cursor:pointer;color:var(--muted)}
+  .step pre{
+    margin:6px 0 0;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    font:400 11px/1.5 "JetBrains Mono",Consolas,monospace;white-space:pre-wrap;max-height:200px;overflow:auto;
+  }
+  #reportBox{min-height:200px}
+  #report{font-size:14px}
+  #report h1{font-size:20px;border-bottom:1px solid var(--border);padding-bottom:8px;margin:0 0 14px}
+  #report h2{font-size:16px;color:var(--gold);margin:20px 0 8px}
+  #report h3{font-size:14px;margin:16px 0 6px}
+  #report table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  #report th,#report td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+  #report th{background:var(--panel-2);color:var(--gold)}
+  #report blockquote{margin:10px 0;padding:8px 14px;border-left:3px solid var(--gold-dim);background:var(--panel-2);color:var(--muted);border-radius:0 8px 8px 0;font-size:13px}
+  #report a{color:var(--cyan);word-break:break-all}
+  #report code{background:var(--panel-2);padding:1px 5px;border-radius:5px;font-family:"JetBrains Mono",Consolas,monospace;font-size:12px}
+  #report ul,#report ol{padding-left:22px}
+  .placeholder{color:var(--muted);font-size:13px;text-align:center;padding:40px 10px}
+  .toolbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px}
+  .btn-mini{background:var(--panel-2);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:400;cursor:pointer}
+  .btn-mini:hover{color:var(--text);border-color:var(--gold-dim)}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--gold-dim);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <h1><span class="star">✦</span> 星铁社区舆情分析</h1>
+    <p>仅分析《崩坏：星穹铁道》玩家社区舆论 · 输入版本或话题关键词开始</p>
+  </header>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="ask">
+      <input type="text" id="topic" placeholder="输入关键词，例如：贪饕、4.5版本、翁法罗斯 …">
+      <button id="run">开始分析</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2 class="sec">分析过程</h2>
+      <div id="log"><div class="placeholder">分析过程会显示在这里</div></div>
+    </div>
+    <div class="card">
+      <div class="toolbar">
+        <button class="btn-mini" id="copy" style="display:none">复制</button>
+        <button class="btn-mini" id="download" style="display:none">导出 .md</button>
+      </div>
+      <h2 class="sec">舆情简报</h2>
+      <div id="reportBox"><div class="placeholder" id="ph">简报会显示在这里</div></div>
+      <div id="report"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var topicInput = document.getElementById("topic");
+  var runBtn = document.getElementById("run");
+  var logEl = document.getElementById("log");
+  var reportEl = document.getElementById("report");
+  var phEl = document.getElementById("ph");
+  var copyBtn = document.getElementById("copy");
+  var downBtn = document.getElementById("download");
+  var chipsEl = document.getElementById("chips");
+  var reportMd = "";
+  var running = false;
+
+  var EXAMPLES = ["贪饕", "4.5版本", "翁法罗斯主线", "货币战争玩法", "欢愉命途"];
+  EXAMPLES.forEach(function(t){
+    var c = document.createElement("span");
+    c.className = "chip";
+    c.textContent = t;
+    c.addEventListener("click", function(){ topicInput.value = t; topicInput.focus(); });
+    chipsEl.appendChild(c);
+  });
+
+  function esc(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function clearLog(){ logEl.innerHTML = ""; }
+  function addStep(cls, html){
+    if(logEl.querySelector(".placeholder")) logEl.innerHTML = "";
+    var d = document.createElement("div");
+    d.className = "step " + cls;
+    d.innerHTML = html;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function renderMd(md){
+    if(window.marked && typeof window.marked.parse === "function"){
+      reportEl.innerHTML = window.marked.parse(md);
+    } else {
+      reportEl.innerHTML = "<pre style='white-space:pre-wrap'>" + esc(md) + "</pre>";
+    }
+  }
+
+  function setRunning(v){
+    running = v;
+    runBtn.disabled = v;
+    runBtn.innerHTML = v ? '<span class="spin"></span>分析中…' : "开始分析";
+  }
+
+  function parseSSE(chunk){
+    var ev = "message", dataLines = [];
+    chunk.split("\n").forEach(function(line){
+      if(line.indexOf("event:") === 0) ev = line.slice(6).trim();
+      else if(line.indexOf("data:") === 0) dataLines.push(line.slice(5).trim());
+    });
+    if(!dataLines.length) return;
+    var data;
+    try { data = JSON.parse(dataLines.join("\n")); } catch(e){ return; }
+    if(ev === "status"){
+      addStep("", esc(data.text || ""));
+    } else if(ev === "tool_call"){
+      addStep("call", "🔍 调用搜索：<code>" + esc(JSON.stringify(data.args || {})) + "</code>");
+    } else if(ev === "tool_result"){
+      addStep("res", "📄 " + esc(data.name || "工具") + " 返回" +
+        "<details><summary>查看内容</summary><pre>" + esc((data.content||"").slice(0,2000)) + "</pre></details>");
+    } else if(ev === "assistant"){
+      reportMd = data.content || "";
+      renderMd(reportMd);
+      copyBtn.style.display = downBtn.style.display = "";
+    } else if(ev === "error"){
+      addStep("err", "⚠ " + esc(data.text || "出错"));
+    }
+  }
+
+  function analyze(){
+    if(running) return;
+    var topic = topicInput.value.trim();
+    if(!topic){ topicInput.focus(); return; }
+    reportMd = "";
+    reportEl.innerHTML = "";
+    clearLog();
+    copyBtn.style.display = downBtn.style.display = "none";
+    setRunning(true);
+    addStep("", "提交关键词：" + esc(topic));
+
+    fetch("/api/analyze", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ topic: topic })
+    }).then(function(res){
+      if(!res.ok) return res.text().then(function(t){ throw new Error("HTTP " + res.status + " " + t); });
+      var reader = res.body.getReader();
+      var dec = new TextDecoder();
+      var buf = "";
+      function pump(){
+        return reader.read().then(function(r){
+          if(r.done){ if(buf.trim()) parseSSE(buf); return; }
+          buf += dec.decode(r.value, {stream:true});
+          var i;
+          while((i = buf.indexOf("\n\n")) >= 0){
+            var chunk = buf.slice(0, i);
+            buf = buf.slice(i + 2);
+            parseSSE(chunk);
+          }
+          return pump();
+        });
+      }
+      return pump();
+    }).then(function(){
+      if(!reportMd) addStep("", "分析结束（未产出简报，请重试或换关键词）");
+      else addStep("", "✓ 分析完成");
+    }).catch(function(err){
+      addStep("err", "请求失败：" + esc(err.message || err));
+    }).then(function(){
+      setRunning(false);
+    });
+  }
+
+  runBtn.addEventListener("click", analyze);
+  topicInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); analyze(); }
+  });
+  copyBtn.addEventListener("click", function(){
+    if(navigator.clipboard) navigator.clipboard.writeText(reportMd);
+    copyBtn.textContent = "已复制";
+    setTimeout(function(){ copyBtn.textContent = "复制"; }, 1200);
+  });
+  downBtn.addEventListener("click", function(){
+    var blob = new Blob([reportMd], {type:"text/markdown;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "星铁舆情简报.md";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+})();
+</script>
+</body>
+</html>

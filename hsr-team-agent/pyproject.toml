@@ -1,0 +1,50 @@
+[project]
+name = "hsr-team-agent"
+version = "0.1.0"
+description = "《崩坏：星穹铁道》阵容搭配智能推荐 Agent"
+requires-python = ">=3.10"
+dependencies = [
+    "langgraph>=1.0.0",
+    "langchain-deepseek>=0.1.0",
+    "langchain-core>=0.3.0",
+    "python-dotenv>=1.0.1",
+    "httpx>=0.27.0",
+    "beautifulsoup4>=4.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "langgraph-cli[inmem]>=0.4.14",
+    "pytest>=8.0",
+    "ruff>=0.8.2",
+    "mypy>=1.13.0",
+]
+
+[build-system]
+requires = ["setuptools>=83.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["agent"]
+
+[tool.setuptools.package-dir]
+"agent" = "src/agent"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "D"]
+ignore = ["D203", "D213", "E501"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
